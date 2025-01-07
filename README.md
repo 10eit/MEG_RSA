@@ -1,0 +1,1 @@
+Since many toolboxes on RSA in written in fMRI-styles, I am writing some scripts for my own research purpose. The utilities codes in this repo was made upon some papers will be listed soon. Use it with caution and if you find some error(scientifically or programming) feel free to make issues.
