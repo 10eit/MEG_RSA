@@ -98,7 +98,7 @@ def check_spatial_patches(info, ch_type, k, d):
         mask=mask,
         axes=ax_topo,
         cmap="Reds",
-        vlim=(np.min, np.max),  # Use nanmin/nanmax to handle NaNs
+        vlim=(np.min, np.max),
         show=False,
         colorbar=False,
         show_names=name_utils,

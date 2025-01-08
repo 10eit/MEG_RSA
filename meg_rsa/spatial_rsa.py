@@ -5,7 +5,7 @@ from tqdm.notebook import tqdm as tqdm_notebook  # Notebook-specific tqdm
 
 def spatial_similarity(data, preselected_sensors=None, n_jobs=-1, use_notebook_tqdm=None):
     """
-    Perform Spatial Representational Similarity Analysis (RSA).
+    Calculate Spatial Similarity within single condition.
 
     Parameters:
     - data: (n_trials, n_channels, n_timepoints) for single-subject or a list of such arrays for group-level.
