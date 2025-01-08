@@ -63,7 +63,7 @@ def spatial_similarity(data, preselected_sensors=None, n_jobs=-1, use_notebook_t
             group_r_values.append(np.array(results))
 
         # Average RSA values across subjects
-        r_values = np.mean(group_r_values, axis=0)
+        r_values = np.array(group_r_values)
         return r_values
 
     # Handle single-subject data (numpy array)
@@ -83,3 +83,6 @@ def spatial_similarity(data, preselected_sensors=None, n_jobs=-1, use_notebook_t
 
     else:
         raise TypeError("Input data must be a numpy array (single-subject) or a list of numpy arrays (group-level).")
+    
+
+def cross_conditions_spatial_similarity(data1,data2,presel)
