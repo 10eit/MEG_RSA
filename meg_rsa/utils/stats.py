@@ -1,6 +1,6 @@
 import numpy as np
 import mne
-import spatial
+import meg_rsa.sensors.spatial as spatial
 
 
 def compare_spatial_similarity(data_list, preselected_sensors=None, n_jobs=-1, use_notebook_tqdm=None):
