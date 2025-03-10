@@ -215,7 +215,7 @@ def spatial_sensor_searchlight(info, ch_type, data, radius):
     def within_patches_correlation(data, node, radius):
         """Calculate spatial similarity for a single node (sensor)."""
         neighbours = calculate_sensor_patches(info, ch_type, node, radius)
-        single_node_corr = spatial.spatial_similarity(
+        single_node_corr = spatial_similarity(
             data, preselected_sensors=neighbours, n_jobs=-1, use_notebook_tqdm=None
         )
         return single_node_corr
