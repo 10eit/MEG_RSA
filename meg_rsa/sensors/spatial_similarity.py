@@ -4,115 +4,25 @@ import numpy as np
 from joblib import Parallel, delayed
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
-from scipy.sparse import csr_matrix
-import matplotlib.pyplot as plt
+from adjacency_tools import calculate_sensor_patches
 
-def calculate_sensor_patches(info, ch_type, k, d):
-    """
-    Find the indices of nodes at distances less than or equal to d from node k 
-    in a sparse adjacency matrix.
+"""
+Some helpful references for this tools:
 
-    Parameters:
-    -----------
-    info : mne.Info
-        The MNE Info object containing channel information.
-    ch_type : str
-        The channel type to use for computing the adjacency matrix (e.g., 'grad' or 'mag').
-    k : int
-        Index of the starting node.
-    d : int
-        Maximum distance to search for.
+1. https://elifesciences.org/articles/39061
+2. https://www.jneurosci.org/content/40/16/3278
+3. https://www.biorxiv.org/content/10.1101/2024.09.27.615440v1.full
 
-    Returns:
-    --------
-    np.ndarray
-        Indices of nodes at distances ≤ d from node k.
+This tool actually does not perform 'true RSA', 
+it calculates spatial pattern consistency (similarity) in spatial pattern.
 
-    Raises:
-    -------
-    ValueError
-        If distance d is not a positive integer.
-    """
-    # Compute adjacency matrix based on channel type
-    adjacency, _ = mne.channels.find_ch_adjacency(info, ch_type=ch_type)
-
-    if d < 1:
-        raise ValueError("Distance d must be a positive integer")
-    
-    # Initialize the starting node as a sparse row vector
-    current = csr_matrix(([1], ([0], [k])), shape=(1, adjacency.shape[0]))
-    
-    # Keep track of all visited nodes
-    visited_nodes = set(current.indices.tolist())
-    
-    # Perform matrix multiplication up to distance d
-    for _ in range(d):
-        current = current @ adjacency
-        visited_nodes.update(current.indices.tolist())
-    
-    return np.array(list(visited_nodes))
-
-def check_spatial_patches(info, ch_type, k, d):
-    """
-    Visualize spatial patches around a given node using a topographic map.
-
-    Parameters:
-    -----------
-    info : mne.Info
-        The MNE Info object containing channel information.
-    ch_type : str
-        The channel type to use for computing the adjacency matrix (e.g., 'grad' or 'mag').
-    k : int
-        Index of the starting node.
-    d : int
-        Maximum distance to search for.
-
-    Returns:
-    --------
-    matplotlib.figure.Figure
-        A figure showing the spatial patches on a topographic map.
-    """
-    # Calculate spatial patches
-    patches = calculate_sensor_patches(info=info, ch_type=ch_type, k=k, d=d)
-    print(f"Starting channel: {info['ch_names'][k]}")
-    
-    def name_utils(x):
-        """
-        Helper function to label channels starting with the same prefix as the starting channel.
-        """
-        if x.startswith(info['ch_names'][k][:-1]):
-            return 'HERE'
-        else:
-            return ""
-
-    # Create simulated data and masks
-    adjacency, _ = mne.channels.find_ch_adjacency(info, ch_type=ch_type)
-    sim_data = np.full(adjacency.shape[0], np.nan)
-    mask = np.zeros((adjacency.shape[0], 1), dtype=bool)
-    mask[patches, :] = True  # Mark all patches
-
-    # Plot setup
-    fig, ax_topo = plt.subplots(1, 1, figsize=(3, 3), layout="constrained")
-    evoked = mne.EvokedArray(sim_data[:, np.newaxis], info, tmin=0)
-    
-    # Plot base topomap
-    evoked.plot_topomap(
-        times=0,
-        mask=mask,
-        axes=ax_topo,
-        cmap="Reds",
-        vlim=(np.min, np.max),
-        show=False,
-        colorbar=False,
-        show_names=name_utils,
-        mask_params=dict(markersize=10, markerfacecolor="orange", markeredgecolor="k"),
-    )
-    ax_topo.set_title(f'Spatial Patches \n {patches.shape[0]} Channels', y=0.9)
-    return fig
+This tool can be used as temporal region selection to reduce multiple comparision
+and computational cost. 
+"""
 
 def spatial_similarity(data, preselected_sensors=None, n_jobs=-1, use_notebook_tqdm=None):
     """
-    Calculate Spatial Similarity within single condition.
+    Calculate Spatial (Pattern) Similarity within single condition.
 
     Parameters:
     - data: (n_trials, n_channels, n_timepoints) for single-subject or a list of such arrays for group-level.
@@ -191,9 +101,9 @@ def spatial_similarity(data, preselected_sensors=None, n_jobs=-1, use_notebook_t
     else:
         raise TypeError("Input data must be a numpy array (single-subject) or a list of numpy arrays (group-level).")
     
-def spatial_sensor_searchlight(info, ch_type, data, radius):
+def adjacency_similarity(info, ch_type, data, radius):
     """
-    Computes spatial similarity across sensors using a searchlight approach.
+    Computes spatial similarity across sensors and their adjacencies.
 
     Parameters:
     - info : mne.Info
