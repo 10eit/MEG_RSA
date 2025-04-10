@@ -15,7 +15,70 @@ def softmax(x):
     e_x = np.exp(x - np.max(x))
     return e_x / e_x.sum()
 
-### Similarity Function Starts Here
+def compute_similarity(method, rdm1, rdm2):
+    """
+    Search for a similarity function by name and return the corresponding function.
+
+    Parameters
+    ----------
+    x : str
+        Name of the similarity function to search for. Case-insensitive.
+        Available options:
+        - 'norm' or 'norm_similarity'
+        - 'frobenius' or 'frobenius_similarity'
+        - 'cosine' or 'cosine_similarity'
+        - 'correlation' or 'correlation_similarity'
+        - 'spearman' or 'spearman_rho_similarity'
+        - 'kendall' or 'kendall_tau_similarity'
+        - 'bures' or 'bures_similarity'
+        - 'procrustes' or 'procruste_shape_similarity'
+        - 'wasserstein' or 'wasserstein_similarity'
+        - 'riemann' or 'riemann_similarity'
+        - 'cka' or 'ckn_similarity'
+        - 'nll' or 'nll_similarity'
+
+    Returns
+    -------
+    function
+        The corresponding similarity function.
+
+    Raises
+    ------
+    ValueError
+        If the input string doesn't match any available similarity function.
+    """
+    method = method.lower()
+    similarity_functions = {
+        'norm': norm_similarity,
+        'norm_similarity': norm_similarity,
+        'frobenius': frobenius_similarity,
+        'frobenius_similarity': frobenius_similarity,
+        'cosine': cosine_similarity,
+        'cosine_similarity': cosine_similarity,
+        'correlation': correlation_similarity,
+        'correlation_similarity': correlation_similarity,
+        'spearman': spearman_rho_similarity,
+        'spearman_rho_similarity': spearman_rho_similarity,
+        'kendall': kendall_tau_similarity,
+        'kendall_tau_similarity': kendall_tau_similarity,
+        'bures': bures_similarity,
+        'bures_similarity': bures_similarity,
+        'procrustes': procruste_shape_similarity,
+        'procruste_shape_similarity': procruste_shape_similarity,
+        'wasserstein': wasserstein_similarity,
+        'wasserstein_similarity': wasserstein_similarity,
+        'riemann': riemann_similarity,
+        'riemann_similarity': riemann_similarity,
+        'cka': ckn_similarity,
+        'ckn_similarity': ckn_similarity,
+        'nll': nll_similarity,
+        'nll_similarity': nll_similarity
+    }
+    
+    if method not in similarity_functions:
+        raise ValueError(f"Unknown similarity function: {method}. Available options are: {list(similarity_functions.keys())}")
+    
+    return similarity_functions[method](rdm1, rdm2)
 
 def norm_similarity(rdm1, rdm2, l=2):
     """
