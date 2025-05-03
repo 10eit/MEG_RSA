@@ -70,4 +70,7 @@ def fetch_phonetic_embedding(stimulus_path, device, model_name):
         hidden_states.append(torch.mean(outputs.last_hidden_state, dim=1).squeeze())
     
     return hidden_states
-           
+
+
+def fetch_semantic_embedding(words, device, model_name):
+    
