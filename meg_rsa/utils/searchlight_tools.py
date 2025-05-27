@@ -1,4 +1,5 @@
 import mne
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Union, Optional
@@ -66,42 +67,73 @@ def sensor_patches(info, ch_type=None, k=None, d=None):
     
     return np.array(list(visited_nodes))
 
-def source_patches(src, k, d):
+def source_patches(src, k, d=None, exclude_medial=None):
     """
-    Find the indices of nodes at distances less than or equal to d from node k 
-    in a sparse adjacency matrix.
+    Generate a searchlight ball of vertices within distance d from a starting vertex k.
 
-    Parameters:
-    -----------
-    src : mne.SourceSpace or scipy.sparse.csr_matrix
-        Either an MNE Source Space or a precomputed sparse adjacency matrix.
+    Parameters
+    ----------
+    src : mne.SourceSpaces or scipy.sparse.csr_matrix
+        Source space object or adjacency matrix defining connectivity.
     k : int
-        Index of the starting node.
-    d : int
-        Maximum distance to search for.
+        Starting vertex index.
+    d : int, optional
+        Distance (number of edges) to define the searchlight ball. If None, defaults
+        are set based on ico-sampling (see below).
+    exclude_medial : array-like, optional
+        Array of vertex indices (e.g., medial wall vertices) to exclude from the ball.
 
-    Returns:
-    --------
-    np.ndarray
-        Indices of nodes at distances ≤ d from node k.
-
-    Raises:
+    Returns
     -------
-    ValueError
-        If distance d is not a positive integer.
-        If src is neither an mne.SourceSpace nor a scipy.sparse.csr_matrix.
+    searchlight_ball : np.ndarray
+        Array of vertex indices within distance d from vertex k, excluding medial wall
+        if specified.
+
+    Notes
+    -----
+    If d is not provided, default distances are based on ico-sampling:
+    - ico=7 (~0.7mm dipole spacing) -> d=9 (~6mm radius)
+    - ico=6 (~1.5mm dipole spacing) -> d=4 (~6mm radius)
+    - ico=5 (~3mm dipole spacing) -> d=2 (~6mm radius)
+    - ico=4 (~6mm dipole spacing) -> d=1 (~6mm radius)
+    - ico<4 -> d=1, with a warning suggesting univariate analysis.
     """
     # Check input types and get adjacency matrix
-    if isinstance(src, mne.SourceSpace):
-        adjacency, _ = mne.channels.find_src_adjacency(src)
-    elif issparse(src) and src.format == 'csr':
+    if isinstance(src, mne.SourceSpaces):
+        adjacency, _ = mne.channels.find_ch_adjacency(src, ch_type='meg')
+    elif issparse(src):
         adjacency = src
     else:
-        raise ValueError("src must be either an mne.SourceSpace or a scipy.sparse.csr_matrix")
+        raise ValueError("src must be either an mne.SourceSpaces or a scipy.sparse.csr_matrix")
     
-    if d < 1:
+    # Ensure k is valid
+    if not (0 <= k < adjacency.shape[0]):
+        raise ValueError(f"Starting vertex k={k} is out of bounds for adjacency matrix of size {adjacency.shape[0]}")
+
+    # Determine default distance d based on ico-sampling if not provided
+    if d is None:
+        if isinstance(src, mne.SourceSpaces):
+            # Estimate ico-sampling based on number of vertices
+            n_vertices = sum(len(h['vertno']) for h in src)
+            if n_vertices > 100000:  # ico=7, ~0.7mm spacing
+                d = 9  # ~6mm radius
+            elif n_vertices > 40000:  # ico=6, ~1.5mm spacing
+                d = 4
+            elif n_vertices > 20000:   # ico=5, ~3mm spacing
+                d = 2
+            else:                     # ico=4 or lower, ~6mm spacing
+                d = 1
+                warnings.warn("Low ico-sampling detected (ico<4). Default d=1 is used. "
+                              "Consider univariate analysis for better results.")
+        else:
+            d = 1  # Default for sparse matrix if no src info
+            warnings.warn("No SourceSpaces provided, using default d=1. "
+                          "Consider specifying d explicitly or using univariate analysis.")
+    
+    # Validate d
+    if not isinstance(d, int) or d < 1:
         raise ValueError("Distance d must be a positive integer")
-    
+
     # Initialize the starting node as a sparse row vector
     current = csr_matrix(([1], ([0], [k])), shape=(1, adjacency.shape[0]))
     
@@ -112,8 +144,18 @@ def source_patches(src, k, d):
     for _ in range(d):
         current = current @ adjacency
         visited_nodes.update(current.indices.tolist())
+
+    # Convert visited nodes to array
+    searchlight_ball = np.array(list(visited_nodes))
+
+    # Exclude medial wall vertices if specified
+    if exclude_medial is not None:
+        exclude_medial = np.asarray(exclude_medial)
+        if not np.all(np.isin(exclude_medial, np.arange(adjacency.shape[0]))):
+            raise ValueError("exclude_medial contains invalid vertex indices")
+        searchlight_ball = np.setdiff1d(searchlight_ball, exclude_medial)
     
-    return np.array(list(visited_nodes))
+    return searchlight_ball
 
 def visualized_sensor_patches(
     info: Union[mne.Info, csr_matrix],
