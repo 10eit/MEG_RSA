@@ -167,5 +167,3 @@ def roi_searchlight(data, model_rdm, src, fs_root, atlas, rdm_metric, rsa_metric
     )
     
     return np.array(rsa_values), valid_labels
-
-def spatiotemporal_searchlight(data)

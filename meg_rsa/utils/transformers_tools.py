@@ -37,6 +37,24 @@ def load_audio(stimulus_path,device='cpu'):
         return tensor_list
 
 def fetch_phonetic_embedding(stimulus_path, device, model_name):
+    """
+    Loading Audio file and get its embedding from a pretrained Model.
+    
+    Parameters
+    ----------
+    stimulus_path : PATH-like object | list
+        PATH to the stimulus or a list of PATH to a dataset.
+    device : str
+        Tensor you want to load on, can be 'cuda' or 'cpu'.
+        Default : 'cpu' to load tensor on CPU. 
+    model_name : str
+        Model you want to load from huggingface
+
+    Returns
+    -------
+    float
+        Pearson correlation coefficient between the two RDMs, ranging from -1 to 1.
+    """
     audio_data = load_audio(stimulus_path,device=device)
 
     audio_processor = AutoProcessor.from_pretrained(model_name)
@@ -73,4 +91,5 @@ def fetch_phonetic_embedding(stimulus_path, device, model_name):
 
 
 def fetch_semantic_embedding(words, device, model_name):
+    
     

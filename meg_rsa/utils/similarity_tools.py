@@ -471,7 +471,7 @@ def ckn_similarity(rdm1, rdm2):
     ### where HSIC(X,Y) = vec(G_X)^{\top} vec(G_Y) vec(·) is flatten operation
     ### and G_X is defined as HX(HX)^{\top} / p, p is the column number and H is the data centerizer.
     ### H = I_p - (11^{\top}) / p
-    
+    ### ！！！！！ This implementation is Biased!!!! Remember to Modify it.
     p, _ = rdm1.shape[0]
     centerizer = np.identity(p) - (np.ones_like(p) @ np.ones_like(p).T / p)
 
